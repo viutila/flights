@@ -10,18 +10,37 @@ import Checkbox from '@material-ui/core/Checkbox';
 
 import PropTypes from 'prop-types';
 
+const flightTypeEnum = {
+    CHEAP: 'cheap',
+    BUSINESS: 'business'
+}
 
 const headRows = [
     { id: 'route', numeric: false, disablePadding: true, label: 'Route' },
-    { id: 'departure', numeric: true, disablePadding: false, label: 'Departure' },
-    { id: 'arrival', numeric: true, disablePadding: false, label: 'Arrival' },
+    { id: 'departure', numeric: false, disablePadding: false, label: 'Departure' },
+    { id: 'arrival', numeric: false, disablePadding: false, label: 'Arrival' },
+];
+
+const headRows01 = [
+    { id: 'departure', numeric: false, disablePadding: false, label: 'Departure' },
+    { id: 'arrival', numeric: false, disablePadding: false, label: 'Arrival' },
+    { id: 'departureTime', numeric: false, disablePadding: false, label: 'Departure Time' },
+    { id: 'arrivalTime', numeric: false, disablePadding: false, label: 'Arrival Time' },
 ];
 
 export default function EnhancedTableHead(props) {
-    const { onSelectAllClick, order, orderBy, numSelected, rowCount, onRequestSort } = props;
+    const { onSelectAllClick, order, orderBy, numSelected, rowCount, onRequestSort, flightType } = props;
     const createSortHandler = property => event => {
         onRequestSort(event, property);
     };
+
+    let headRowsRst = [];
+
+    if (flightType === flightTypeEnum.CHEAP) {
+        headRowsRst = headRows;
+    } else if (flightType === flightTypeEnum.BUSINESS) {
+        headRowsRst = headRows01;
+    }
 
     return (
         <TableHead>
@@ -34,7 +53,7 @@ export default function EnhancedTableHead(props) {
                         inputProps={{ 'aria-label': 'Select all desserts' }}
                     />
                 </TableCell>
-                {headRows.map(row => (
+                {headRowsRst.map(row => (
                     <TableCell
                         key={row.id}
                         align={row.numeric ? 'right' : 'left'}

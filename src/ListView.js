@@ -1,10 +1,7 @@
 import React from 'react';
 
 import { connect } from "react-redux";
-import { getFlights, deleteFlights, addFlights } from './actions/flightsActions';
-
-import _ from 'lodash';
-
+import { getFlights, deleteFlights, clearFlights } from './actions/flightsActions';
 
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
@@ -15,12 +12,14 @@ import Paper from '@material-ui/core/Paper';
 import Checkbox from '@material-ui/core/Checkbox';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Switch from '@material-ui/core/Switch';
-
-
+import Select from '@material-ui/core/Select';
+import MenuItem from '@material-ui/core/MenuItem';
 import { withStyles } from '@material-ui/styles';
 
 import EnhancedTableHead from './EnhancedTableHead';
 import EnhancedTableToolbar from './EnhancedTableToolbar';
+
+import CircularIndeterminate from './CircularIndeterminate';
 
 
 
@@ -52,10 +51,12 @@ function getSorting(order, orderBy) {
 const useStyles = {
     root: {
         padding: '20px',
+        position: 'relative'
     },
     paper: {
         width: '100%',
         marginBottom: '5px',
+        marginTop: '10px'
     },
     table: {
         minWidth: 750,
@@ -84,7 +85,13 @@ class ListView extends React.Component {
             rowsPerPage: 5,
             flightType: flightType.CHEAP
         }
-        this.props.getFlights(flightType.CHEAP);
+    }
+
+    componentDidMount() {
+        const data = this.getFlightsData();
+        if (data.length === 0) {
+            this.props.getFlights(flightType.CHEAP);
+        }
     }
 
     setOrder = (order) => {
@@ -111,6 +118,9 @@ class ListView extends React.Component {
         this.setState({ rowsPerPage });
     }
 
+    setFlightType = (flightType) => {
+        this.setState({ flightType });
+    }
 
 
     handleRequestSort = (event, property) => {
@@ -122,7 +132,7 @@ class ListView extends React.Component {
     handleSelectAllClick = (event) => {
         if (event.target.checked) {
             const rows = this.getFlightsData();
-            const newSelecteds = rows.map(n => this.handleSelectedValue(n.route, n.departure, n.arrival));
+            const newSelecteds = rows.map(n => this.handleSelectedValue(n));
             this.setSelected(newSelecteds);
             return;
         }
@@ -161,10 +171,12 @@ class ListView extends React.Component {
         this.setDense(event.target.checked);
     }
 
-
-
-    handleSelectedValue(route, departure, arrival) {
-        return route + ';' + departure + ';' + arrival;
+    handleSelectedValue(item) {
+        if (this.state.flightType === flightType.CHEAP) {
+            return item.route + ';' + item.departure + ';' + item.arrival;
+        } else if (this.state.flightType === flightType.BUSINESS) {
+            return item.departure + ';' + item.arrival + ';' + item.departureTime + ';' + item.arrivalTime;
+        }
     }
 
     getFlightsData() {
@@ -181,23 +193,63 @@ class ListView extends React.Component {
         return rst;
     }
 
-   handleInputChange = (event) => {
-       const targetName = event.target.name;
-       const targetValue = event.target.value;
-       this.setState({
-           [targetName]: targetValue
-       });
-   }
+    handleInputChange = (event) => {
+        const targetName = event.target.name;
+        const targetValue = event.target.value;
+        this.setState({
+            [targetName]: targetValue
+        });
+    }
 
-   createFlight = (e) => {
-       const data = {
-           route: this.state.inputRoute,
-           departure: this.state.inputDeparture,
-           arrival: this.state.inputArrival,
-       };
-       this.props.addFlights(this.state.flightType, data);
+    changeFlightType = (event) => {
+        console.log(event);
+        if (this.state.flightType !== event.target.value) {
+            this.props.clearFlights();
+            this.props.getFlights(event.target.value)
+            this.setFlightType(event.target.value);
+            this.setSelected([]);
+        }
+    }
 
-   }
+    renderTableCell01(row) {
+        if (this.state.flightType === flightType.CHEAP) {
+            return (
+                <TableCell align="left">
+                    {row.route}
+                </TableCell>
+            )
+        }
+        return null;
+    }
+
+    renderTableCell02(row) {
+        if (this.state.flightType === flightType.BUSINESS) {
+            return (
+                <TableCell align="left">
+                    {row.departure}
+                </TableCell>
+            )
+        }
+        return null;
+    }
+
+    renderTableCell03(row) {
+        if (this.state.flightType === flightType.BUSINESS) {
+            return (
+                <TableCell align="left">
+                    {row.arrival}
+                </TableCell>
+            )
+        }
+        return null;
+    }
+
+    renderLoadingDiv() {
+        if (this.props.flights.fetching) {
+            return <CircularIndeterminate />
+        }
+        return null;
+    }
 
     render() {
 
@@ -210,6 +262,18 @@ class ListView extends React.Component {
 
         return (
             <div className={classes.root}>
+                <Select
+                    value={this.state.flightType}
+                    onChange={this.changeFlightType}
+                    inputProps={{
+                        name: 'FlightType',
+                        id: 'FlightType-simple',
+                    }}
+                >
+                    <MenuItem value={flightType.CHEAP}>Cheap</MenuItem>
+                    <MenuItem value={flightType.BUSINESS}>Business</MenuItem>
+                </Select>
+
                 <Paper className={classes.paper}>
 
                     <EnhancedTableToolbar
@@ -232,22 +296,23 @@ class ListView extends React.Component {
                                 onSelectAllClick={this.handleSelectAllClick}
                                 onRequestSort={this.handleRequestSort}
                                 rowCount={rows.length}
+                                flightType={this.state.flightType}
                             />
                             <TableBody>
                                 {stableSort(rows, getSorting(this.state.order, this.state.orderBy))
                                     .slice(this.state.page * this.state.rowsPerPage, this.state.page * this.state.rowsPerPage + this.state.rowsPerPage)
                                     .map((row, index) => {
-                                        const isItemSelected = isSelected(this.handleSelectedValue(row.route,row.departure,row.arrival));
+                                        const isItemSelected = isSelected(this.handleSelectedValue(row));
                                         const labelId = `enhanced-table-checkbox-${index}`;
 
                                         return (
                                             <TableRow
                                                 hover
-                                                onClick={event => this.handleClick(event, this.handleSelectedValue(row.route,row.departure,row.arrival))}
+                                                onClick={event => this.handleClick(event, this.handleSelectedValue(row))}
                                                 role="checkbox"
                                                 aria-checked={isItemSelected}
                                                 tabIndex={-1}
-                                                key={this.handleSelectedValue(row.route,row.departure,row.arrival)}
+                                                key={index}
                                                 selected={isItemSelected}
                                             >
                                                 <TableCell padding="checkbox">
@@ -256,11 +321,11 @@ class ListView extends React.Component {
                                                         inputProps={{ 'aria-labelledby': labelId }}
                                                     />
                                                 </TableCell>
-                                                <TableCell component="th" id={labelId} scope="row" padding="none">
-                                                    {row.route}
-                                                </TableCell>
-                                                <TableCell align="right">{this.getDateStr(row.departure)}</TableCell>
-                                                <TableCell align="right">{this.getDateStr(row.arrival)}</TableCell>
+                                                {this.renderTableCell01(row, labelId)}
+                                                {this.renderTableCell02(row, labelId)}
+                                                {this.renderTableCell03(row, labelId)}
+                                                <TableCell align="left">{this.getDateStr(row.departureTime || row.departure)}</TableCell>
+                                                <TableCell align="left">{this.getDateStr(row.arrivalTime || row.arrival)}</TableCell>
                                             </TableRow>
                                         );
                                     })}
@@ -293,13 +358,7 @@ class ListView extends React.Component {
                     label="Dense padding"
                 />
 
-
-                <div style={{marginTop: '20px'}}>
-                    <input type='text' name='inputRoute' value={this.state.inputRoute} onChange={this.handleInputChange}></input>
-                    <input type='text' name='inputDeparture' value={this.state.inputDeparture} onChange={this.handleInputChange}></input>
-                    <input type='text' name='inputArrival' value={this.state.inputArrival} onChange={this.handleInputChange}></input>
-                    <button onClick={this.createFlight}>Create Flight</button>
-                </div>
+                {this.renderLoadingDiv()}
             </div>
         );
     }
@@ -312,7 +371,7 @@ function mapStateToProps(state) {
 const mapDispatchToProps = {
     getFlights,
     deleteFlights,
-    addFlights
+    clearFlights
 }
 
 export default connect(

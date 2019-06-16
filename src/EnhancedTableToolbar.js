@@ -61,7 +61,7 @@ export default function EnhancedTableToolbar(props) {
             </Typography>
                 ) : (
                         <Typography variant="h6" id="tableTitle">
-                            Nutrition
+                            Flights CRUD project
             </Typography>
                     )}
             </div>

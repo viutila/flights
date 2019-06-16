@@ -2,16 +2,16 @@ import React from 'react';
 import './App.css';
 
 import { connect } from "react-redux";
-import { getFlights, deleteFlights, addFlights } from './actions/flightsActions';
-
-import _ from 'lodash';
-
 import Navbar from './Navbar';
 import ListView from './ListView';
-
-
-
+import CreateFlightView from './CreateFlightView';
 import { withStyles } from '@material-ui/styles';
+
+import {
+    BrowserRouter as Router,
+    Route,
+    Switch
+} from 'react-router-dom';
 
 
 
@@ -31,27 +31,21 @@ const useStyles = {
     },
 };
 
-const flightType = {
-    CHEAP: 'cheap',
-    BUSINESS: 'business'
-}
 
 class App extends React.Component {
 
-    constructor(props) {
-        super(props);
-
-        this.state = {
-        }
-    }
-
-
     render() {
         return (
-            <div>
-                <Navbar />
-                <ListView />
-            </div>
+            <Router>
+                <div>
+                    <Route path="/" render={(match) => <Navbar match={match} />} />
+                    <Switch>
+                        <Route exact path="/create" render={() => <CreateFlightView />} />
+                        <Route exact path="/" render={() => <ListView />} />
+                        <Route exact path="/list" render={() => <ListView />} />
+                    </Switch>
+                </div>
+            </Router>
         );
     }
 }
@@ -60,14 +54,8 @@ function mapStateToProps(state) {
     return { flights: state.flights }
 }
 
-const mapDispatchToProps = {
-    getFlights,
-    deleteFlights,
-    addFlights
-}
-
 export default connect(
-    mapStateToProps, mapDispatchToProps
+    mapStateToProps
 )(
     withStyles(useStyles)(App)
 );
