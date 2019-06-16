@@ -1,26 +1,27 @@
 import React from 'react';
-import logo from './logo.svg';
 import './App.css';
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+import { connect } from "react-redux";
+import { getFlights } from './actions/flightsActions';
+
+class App extends React.Component {
+
+  constructor(props) {
+    super(props);
+
+    this.props.getFlights();
+  }
+  render() {
+    return <h1>Hello, foo</h1>;
+  }
 }
 
-export default App;
+function mapStateToProps(state) {
+	return { flights: state.flights }
+}
+
+const mapDispatchToProps = {
+  getFlights
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(App);
